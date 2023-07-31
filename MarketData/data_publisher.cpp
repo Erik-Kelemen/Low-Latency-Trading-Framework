@@ -36,6 +36,7 @@ public:
     }
 
     bool publishMessage(const std::string& key, const std::string& value) {
+        profiler.stopComponent("Interpolator");
         RdKafka::ErrorCode err = producer_->produce(topicName_, RdKafka::Topic::PARTITION_UA,
                                                     RdKafka::Producer::RK_MSG_COPY,
                                                     const_cast<char*>(value.c_str()), value.size(),
@@ -46,6 +47,7 @@ public:
         }
 
         producer_->poll(0);
+        profiler.stopComponent("Interpolator");
         return true;
     }
 };
