@@ -13,6 +13,7 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* out
 }
 
 std::string fetchStockData(const std::string& symbol) {
+    profiler.startComponent("Web Scraper");
     std::string url = BASE_URL + "function=TIME_SERIES_DAILY&symbol=" + symbol + "&apikey=" + API_KEY;
     CURL* curl = curl_easy_init();
     std::string response;
@@ -30,11 +31,12 @@ std::string fetchStockData(const std::string& symbol) {
 
         curl_easy_cleanup(curl);
     }
-
+    profiler.stopComponent("Web Scraper");
     return response;
 }
 
 void parseStockData(const std::string& jsonData) {
+    profiler.startComponent("Web Scraper");
     rapidjson::Document document;
     document.Parse(jsonData.c_str());
 
@@ -51,6 +53,7 @@ void parseStockData(const std::string& jsonData) {
         // You can extract more data like high, low, close, volume, etc., if needed.
         std::cout << "Date: " << date << ", Open Price: " << openPrice << std::endl;
     }
+    profiler.stopComponent("Web Scraper");
 }
 
 int main() {
