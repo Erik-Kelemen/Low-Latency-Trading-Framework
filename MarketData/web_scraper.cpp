@@ -50,7 +50,6 @@ void parseStockData(const std::string& jsonData) {
     for (auto it = timeSeries.MemberBegin(); it != timeSeries.MemberEnd(); ++it) {
         const std::string& date = it->name.GetString();
         const double openPrice = std::stod(it->value["1. open"].GetString());
-        // You can extract more data like high, low, close, volume, etc., if needed.
         std::cout << "Date: " << date << ", Open Price: " << openPrice << std::endl;
     }
     profiler.stopComponent("Web Scraper");
