@@ -45,26 +45,22 @@ public:
             return false;
         }
 
-        producer_->poll(0); // Trigger delivery report callbacks.
+        producer_->poll(0);
         return true;
     }
 };
 
 int main() {
-    // Assume interpolatedPrices contains the output of the interpolator (StockPrice objects)
     std::vector<StockPrice> interpolatedPrices = {
         {"34200000", 2800.0},  // 9:30 AM
         {"34201000", 2800.2},  // 9:30 AM + 10 milliseconds
-        // ... Add more interpolated prices here ...
         {"57600000", 2805.0}   // 4:00 PM
     };
 
-    // Initialize the Kafka publisher
-    std::string brokerAddr = "localhost:9092"; // Replace with your Kafka broker address
-    std::string topicName = "stock_prices"; // Replace with your desired Kafka topic name
+    std::string brokerAddr = "localhost:9092";
+    std::string topicName = "stock_prices";
     KafkaPublisher kafkaPublisher(brokerAddr, topicName);
 
-    // Publish the interpolated prices to the Kafka topic
     for (const auto& price : interpolatedPrices) {
         std::string key = price.symbol;
         std::string value = std::to_string(price.price);
