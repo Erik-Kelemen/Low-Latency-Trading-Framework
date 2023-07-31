@@ -88,24 +88,17 @@ public:
 };
 
 int main() {
-    // Initialize Kafka consumer
-    std::string brokerAddr = "localhost:9092"; // Replace with your Kafka broker address
-    std::string topicName = "stock_prices"; // Replace with the Kafka topic name
+    std::string brokerAddr = "localhost:9092"; 
+    std::string topicName = "stock_prices";
     KafkaConsumer kafkaConsumer(brokerAddr, topicName);
 
     int lookbackPeriod = 30000; // 30 seconds in milliseconds
     std::vector<StockPrice> lookbackWindow = kafkaConsumer.consumeMessages(lookbackPeriod);
 
-    // Calculate the current cash, holdings, and profits & losses based on previous trading activities
-    double currentCash = 1000000.0; // Initial cash available for trading
-    std::vector<StockPrice> currentHoldings; // Initially, an empty vector since no trades have been made
-    double currentProfitsLosses = 0.0; // Initially, no profits or losses
+    double currentCash = 1000000.0; 
+    std::vector<StockPrice> currentHoldings; 
+    double currentProfitsLosses = 0.0;
 
-    // Send the lookback window and other parameters to the trading engine for further processing
-    // You should have the trading_engine.cpp module ready to handle these parameters and implement the trading strategy.
-    // The implementation of trading_engine.cpp is not provided here, as it is beyond the scope of this response.
-
-    // TODO: Implement communication with trading_engine.cpp and execute the trading strategy.
 
     return 0;
 }
