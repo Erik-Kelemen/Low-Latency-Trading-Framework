@@ -4,7 +4,7 @@
 #include <rapidjson/document.h>
 
 const std::string BASE_URL = "https://www.alphavantage.co/query?";
-const std::string API_KEY = "YOUR_API_KEY";
+const std::string API_KEY = "YOUR_API_KEY"; //todo
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output) {
     size_t totalSize = size * nmemb;
