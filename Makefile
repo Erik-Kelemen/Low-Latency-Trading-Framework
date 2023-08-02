@@ -4,6 +4,9 @@
 CXX := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra
 
+# RapidJSON include directory
+RAPIDJSON_INCLUDE_DIR := /path/to/rapidjson/include
+
 # Source files
 SRCS := main.cpp web_scraper.cpp interpolator.cpp data_publisher.cpp \
         controller.cpp trading_engine.cpp position_calculator.cpp
@@ -20,7 +23,7 @@ $(EXECUTABLE): $(OBJS)
 
 # Rule to compile source files to object files
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I$(RAPIDJSON_INCLUDE_DIR) -c $< -o $@
 
 # Clean rule to remove object files and the executable
 clean:
