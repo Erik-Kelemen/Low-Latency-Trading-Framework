@@ -86,7 +86,33 @@ public:
         return lookbackWindow;
     }
 };
+class Controller { 
 
+public:
+    void runTradingFramework(){
+        std::string brokerAddr = "localhost:9092";
+        std::string topicName = "stock_prices";
+        KafkaConsumer kafkaConsumer(brokerAddr, topicName);
+
+        int lookbackPeriod = 30000; // 30 seconds in milliseconds
+        std::vector<StockPrice> lookbackWindow = kafkaConsumer.consumeMessages(lookbackPeriod);
+
+        double currentCash = 1000000.0;
+        std::vector<StockPrice> currentHoldings;
+        double currentProfitsLosses = 0.0;
+
+        // Initialize the TradingEngine and PositionCalculator objects
+        TradingEngine tradingEngine;
+        PositionCalculator positionCalculator;
+
+        // Execute the trading strategy and get the trades to make
+        std::vector<StockTrade> trades = tradingEngine.executeTradingStrategy(lookbackWindow, currentCash, currentHoldings, currentProfitsLosses);
+
+        // Calculate the new P&L and remaining cash after executing the trades
+        positionCalculator.calculatePnL(trades, currentHoldings, currentProfitsLosses, currentCash);
+
+    }
+}
 int main() {
     std::string brokerAddr = "localhost:9092"; 
     std::string topicName = "stock_prices";
