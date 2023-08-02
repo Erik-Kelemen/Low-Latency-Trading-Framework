@@ -6,7 +6,7 @@ A C++ simulation for researching the latency impact of different algorithmic tra
 
 ## MarketData Component:
 
-web_scraper.cpp: Responsible for querying the Exchange API to retrieve real-world historical stock price data at a fine level.
+web_scraper.cpp: Responsible for querying the Exchange API to retrieve real-world historical stock price data at a fine level. In this framework I use Alpha Vantage, you can get your own API Key for free here: https://www.alphavantage.co/support/#api-key.
 
 interpolator.cpp: Handles interpolating gaps in the real-world data at the millisecond level.
 
