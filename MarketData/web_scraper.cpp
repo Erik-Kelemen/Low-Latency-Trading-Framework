@@ -2,29 +2,61 @@
 #include <string>
 #include <curl/curl.h>
 #include <rapidjson/document.h>
+
 #include "../Profiler/performance_profiler.h"
+#include "../stock_price.h" // Include the StockPrice header
 #include <vector>
+
+#include <fstream>
 
 class WebScraper {
 private:
     const std::string BASE_URL = "https://www.alphavantage.co/query?";
     const std::string API_KEY = "ALQU3SWWYFF7QHXA"; //replace with your Alpha Vantage API Key
+    const std::string interval = "1min";
     Profiler profiler;
-
-    // static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* response) {
-    //     size_t totalSize = size * nmemb;
-    //     ((std::string*)response)->append((char*)(contents), totalSize);
-    //     return totalSize;
-    // }
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* response) {
         size_t totalSize = size * nmemb;
         response->append(static_cast<char*>(contents), totalSize);
         return totalSize;
     }
 public:
-    std::string fetchStockData(const std::string& symbol) {
+    WebScraper(Profiler& profiler){
+        this->profiler = profiler;
+    }
+    
+    void scrape(std::vector<std::string> symbols, std::string targetDate){
         profiler.startComponent("Web Scraper");
-        std::string url = BASE_URL + "function=TIME_SERIES_DAILY&symbol=" + symbol + "&apikey=" + API_KEY;
+        std::ofstream outputFile("exchange_prices.csv");
+        if (outputFile.is_open()) {
+            std::streambuf* originalBuffer = std::cout.rdbuf(); 
+            std::cout.rdbuf(outputFile.rdbuf()); 
+            
+            std::vector<StockPrice> prices;
+            
+            for (const std::string& symbol : symbols) {
+                std::string jsonData = this->fetchStockData(symbol);
+                std::vector<StockPrice> cur_prices = this->parseStockData(symbol, jsonData, targetDate);
+                prices.insert(prices.end(), cur_prices.begin(), cur_prices.end());
+            }
+            std::cout << "ticker,time,price" << std::endl;
+            for(StockPrice p: prices){
+                p.print();
+            }
+
+            std::cout.rdbuf(originalBuffer);
+            
+            outputFile.close();
+            std::cout << "Data written to file successfully." << std::endl;
+        } else {
+            std::cerr << "Error opening the file!" << std::endl;
+        }
+        
+        profiler.stopComponent("Web Scraper");
+    }
+    //9:30 --> 15:59
+    std::string fetchStockData(const std::string& symbol) {
+        std::string url = BASE_URL + "function=TIME_SERIES_INTRADAY&symbol=" + symbol + "&apikey=" + API_KEY + "&interval=" + interval + "&extended_hours=false&outputsize=full";
         CURL* curl = curl_easy_init();
         std::string response;
         if (curl) {
@@ -41,41 +73,40 @@ public:
 
             curl_easy_cleanup(curl);
         }
-        profiler.stopComponent("Web Scraper");
-        std::cout << "Response successful: " << response << std::endl;
+        
         return response;
     }
-    void parseStockData(const std::string& jsonData) {
-        profiler.startComponent("Web Scraper");
+    std::vector<StockPrice> parseStockData(const std::string ticker, const std::string& jsonData, const std::string& targetDate) {
+        std::vector<StockPrice> stockData;
+
         rapidjson::Document document;
         document.Parse(jsonData.c_str());
 
         if (document.HasParseError()) {
             std::cerr << "JSON parsing error!" << std::endl;
-            return;
+            return stockData;
         }
 
-        const rapidjson::Value& timeSeries = document["Time Series (Daily)"];
+        const rapidjson::Value& timeSeries = document["Time Series (1min)"];
 
         for (auto it = timeSeries.MemberBegin(); it != timeSeries.MemberEnd(); ++it) {
             const std::string& date = it->name.GetString();
-            const double openPrice = std::stod(it->value["1. open"].GetString());
-            std::cout << "Date: " << date << ", Open Price: " << openPrice << std::endl;
+            if(date.substr(0, 10) == targetDate){
+                const double openPrice = std::stod(it->value["1. open"].GetString());
+                StockPrice stockPrice(ticker, date, openPrice);
+                stockData.push_back(stockPrice);
+            }
         }
-        profiler.stopComponent("Web Scraper");
+        return stockData;
     }
 };
 
-//g++ -std=c++17 -Wall -Wextra -I/home/mars/rapidjson/include web_scraper.cpp -o web_scraper
-//g++ -std=c++17 -Wall -Wextra -I/home/mars/rapidjson/include -I../Profiler web_scraper.cpp ../Profiler/performance_profiler.cpp -o web_scraper -lcurl
-
+//g++ -std=c++17 -Wall -Wextra -I/home/mars/rapidjson/include -I../Profiler -I../ web_scraper.cpp ../stock_price.cpp ../Profiler/performance_profiler.cpp -o web_scraper -lcurl
 int main() {
     std::vector<std::string> symbols = {"MSFT", "AMZN", "GOOGL", "META", "NFLX"}; 
-    WebScraper scraper;
-    for (const auto& symbol : symbols) {
-        std::string jsonData = scraper.fetchStockData(symbol);
-        // scraper.parseStockData(jsonData);
-    }
-
+    std::string targetDate = "2023-08-02";
+    Profiler prof;
+    WebScraper scraper(prof);
+    scraper.scrape(symbols, targetDate);
     return 0;
 }
