@@ -1,5 +1,3 @@
-// profiler.cpp
-
 #include "performance_profiler.h"
 
 Profiler::Profiler() {
