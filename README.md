@@ -8,10 +8,12 @@ Includes a market data simulator to interpolate millisecond-level stock prices f
 ## MarketData Component:
 
 web_scraper.cpp: Responsible for querying the Exchange API to retrieve real-world historical stock price data at a fine level. In this framework I use Alpha Vantage, you can get your own API Key for free here: https://www.alphavantage.co/support/#api-key.
+Persists results to "exchange_prices.csv".
 
-interpolator.cpp: Handles interpolating gaps in the real-world data at the millisecond level.
+interpolator.cpp: Handles interpolating gaps in the real-world data at the millisecond level. Reads the prices from exchange_prices.csv delivered by the web scraper and, every 10 seconds, populats a new entry into a csv "interpolated_prices.csv" based on minor random variations (+/- 0.0005 by default).
 
-data_publisher.cpp: Publishes real-world stock prices to the next component, the TradingEngine.
+dalta_publisher.cpp: Reads "interpolated_prices.csv" and publishes real-world stock prices back to the TradingEngine, controller.cpp, using Apache Kafka.
+
 ## TradingEngine:
 
 central controller.cpp: Accepts stock prices from the Kafka Queue (provided by data_publisher) and organizes the data into a format that can be sent to the trading_strategy.cpp.
