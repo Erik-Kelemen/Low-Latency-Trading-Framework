@@ -1,19 +1,8 @@
 #include "stock_price.h"
 
-StockPrice::StockPrice(const std::string& ticker, const std::string& time, double price)
-: ticker_(ticker), time_(time), price_(price) {}
+StockPrice::StockPrice(const std::string& ticker_, const std::string& time_, double price_)
+: ticker(ticker_), time(time_), price(price_) {}
 
-const std::string& StockPrice::getTicker() const {
-    return ticker_;
-}
-
-const std::string& StockPrice::getTime() const {
-    return time_;
-}
-
-double StockPrice::getPrice() const {
-    return price_;
-}
 void StockPrice::print() const {
-    std::cout << ticker_ << "," << time_ << "," << price_ << std::endl;
+    std::cout << ticker << "," << time << "," << price << std::endl;
 }
