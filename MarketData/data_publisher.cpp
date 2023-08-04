@@ -3,10 +3,13 @@
 #include <vector>
 #include <librdkafka/rdkafkacpp.h>
 
-struct StockPrice {
-    std::string symbol;
-    double price;
-};
+#include "../util.h"
+#include "../Profiler/performance_profiler.h"
+#include "../stock_price.h"
+#include <fstream>
+#include <sstream>
+
+const std::string& interpolatedFile = "interpolated_prices.csv";
 
 class KafkaPublisher {
 private:
@@ -16,11 +19,12 @@ private:
 
     RdKafka::Conf* conf_;
     RdKafka::Producer* producer_;
-
+    Profiler profiler;
 public:
-    KafkaPublisher(const std::string& brokerAddr, const std::string& topicName)
+    KafkaPublisher(const std::string& brokerAddr, const std::string& topicName, Profiler profiler)
         : brokerAddr_(brokerAddr), topicName_(topicName) {
-
+        this->profiler = profiler;
+        this->profiler.startComponent("Data Publisher");
         conf_ = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
         conf_->set("bootstrap.servers", brokerAddr_, errstr_);
 
@@ -28,13 +32,23 @@ public:
         if (!producer_) {
             std::cerr << "Failed to create Kafka producer: " << errstr_ << std::endl;
         }
+        this->profiler.stopComponent("Data Publisher");
     }
 
     ~KafkaPublisher() {
         delete producer_;
         delete conf_;
     }
-    
+    void publish(){
+        this->profiler.startComponent("Data Publisher");
+        std::vector<StockPrice> prices = read(interpolatedFile);
+        for (const StockPrice& price : prices) {
+            std::string key = price.ticker;
+            std::string value = std::to_string(price.price);
+            this->publishMessage(key, value);
+        }
+        this->profiler.stopComponent("Data Publisher");
+    }
     bool publishMessage(const std::string& key, const std::string& value) {
         profiler.startComponent("Interpolator");
         RdKafka::ErrorCode err = producer_->produce(topicName_, RdKafka::Topic::PARTITION_UA,
@@ -53,21 +67,10 @@ public:
 };
 
 int main() {
-    std::vector<StockPrice> interpolatedPrices = {
-        {"34200000", 2800.0},  // 9:30 AM
-        {"34201000", 2800.2},  // 9:30 AM + 10 milliseconds
-        {"57600000", 2805.0}   // 4:00 PM
-    };
-
     std::string brokerAddr = "localhost:9092";
-    std::string topicName = "stock_prices";
-    KafkaPublisher kafkaPublisher(brokerAddr, topicName);
-
-    for (const auto& price : interpolatedPrices) {
-        std::string key = price.symbol;
-        std::string value = std::to_string(price.price);
-        kafkaPublisher.publishMessage(key, value);
-    }
+    std::string topicName = "prices";
+    Profiler prof;
+    KafkaPublisher kafkaPublisher(brokerAddr, topicName, prof);
 
     return 0;
 }
