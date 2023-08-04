@@ -6,10 +6,10 @@
 #include <thread>
 #include <algorithm>
 
-struct StockPrice {
-    std::string symbol;
-    double price;
-};
+#include "../stock_price.h"
+#include "../Profiler/performance_profiler.h"
+#include "trading_engine.cpp"
+#include "position_calculator.cpp"
 
 class KafkaConsumer {
 private:
@@ -21,11 +21,9 @@ private:
     RdKafka::Consumer* consumer_;
     RdKafka::Topic* topic_;
     RdKafka::TopicPartition* partition_;
-
 public:
     KafkaConsumer(const std::string& brokerAddr, const std::string& topicName)
         : brokerAddr_(brokerAddr), topicName_(topicName) {
-
         conf_ = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
         conf_->set("bootstrap.servers", brokerAddr_, errstr_);
 
@@ -64,7 +62,7 @@ public:
 
         RdKafka::Message* msg = nullptr;
         while (true) {
-            msg = consumer_->consume(100); // 100ms timeout
+            msg = consumer_->consume(10); // 10ms timeout
             if (msg && msg->err() == RdKafka::ERR_NO_ERROR) {
                 int64_t timestamp = msg->timestamp().timestamp;
                 if (timestamp >= startTime && timestamp <= endTime) {
@@ -87,11 +85,13 @@ public:
     }
 };
 class Controller { 
-
+    Profiler* prof;
 public:
     void runTradingFramework(){
+        this->prof = new Profiler();
+        this->prof->startComponent("Controller");
         std::string brokerAddr = "localhost:9092";
-        std::string topicName = "stock_prices";
+        std::string topicName = "stock_prices";k
         KafkaConsumer kafkaConsumer(brokerAddr, topicName);
 
         int lookbackPeriod = 30000; // 30 seconds in milliseconds
@@ -110,7 +110,8 @@ public:
 
         // Calculate the new P&L and remaining cash after executing the trades
         positionCalculator.calculatePnL(trades, currentHoldings, currentProfitsLosses, currentCash);
-
+        this->prof->stopComponent("Controller");
+        this->prof->printComponentTimes();
     }
 }
 int main() {

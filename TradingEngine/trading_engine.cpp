@@ -2,11 +2,8 @@
 #include <vector>
 #include <string>
 #include <chrono>
-
-struct StockPrice {
-    std::string symbol;
-    double price;
-};
+#include "../stock_price.h"
+#include "../Profiler/performance_profiler.h"
 
 class TradingEngine {
 private:
@@ -34,7 +31,7 @@ public:
             // You can implement your own criteria for stock selection here.
             // For this example, let's assume we buy stocks whose current price is below the 30-second moving average.
             if (price.price < ma30) {
-                stocksToBuy.push_back(price.symbol);
+                stocksToBuy.push_back(price.ticker);
             }
         }
 
@@ -75,14 +72,6 @@ public:
 };
 
 int main() {
-    // Assume you have received the lookbackWindow from controller.cpp
-    std::vector<StockPrice> lookbackWindow = {
-        {"34200000", 2800.0},  // 9:30 AM
-        {"34201000", 2800.2},  // 9:30 AM + 10 milliseconds
-        // ... Add more interpolated prices here ...
-        {"34230000", 2799.8},  // 9:30 AM + 30 seconds
-    };
-
     double initialCash = 1000000.0;
     TradingEngine tradingEngine(initialCash);
 
