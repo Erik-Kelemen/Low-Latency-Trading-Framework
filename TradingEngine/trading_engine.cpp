@@ -71,6 +71,9 @@ public:
     }
 };
 
+
+//g++ -std=c++17 -Wall -Wextra -I/home/mars/rapidjson/include -I../Profiler -I../ interpolator.cpp ../stock_price.cpp ../Profiler/performance_profiler.cpp -o interpolator -lcurl
+
 int main() {
     double initialCash = 1000000.0;
     TradingEngine tradingEngine(initialCash);
