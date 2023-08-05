@@ -13,11 +13,16 @@
 const std::string& exchangeFile = "exchange_prices.csv";
 const std::string& interpolatedFile = "interpolated_prices.csv";
 
+
 long long convertToMilliseconds(const std::string& timeString);
 void interpolate(Profiler profiler);
 std::vector<StockPrice> interpolateStockPrices(const std::vector<StockPrice>& historicalPrices);
 
-
+/**
+ * Converts a date-time string to milliseconds since midnight.
+ * @param dateTimeString The input date-time string in the format "yyyy-MM-dd HH:mm:ss".
+ * @return The number of milliseconds since midnight represented by the input date-time string.
+ */
 long long convertToMilliseconds(const std::string& dateTimeString) {
     const std::string dateTime = dateTimeString.substr(10);
     std::istringstream iss(dateTime);
@@ -32,29 +37,26 @@ long long convertToMilliseconds(const std::string& dateTimeString) {
     }
 }
 
+/**
+ * Interpolates the stock prices between historical data points.
+ * @param profiler The Profiler object to measure performance.
+ */
 void interpolate(Profiler profiler){
     profiler.startComponent("Interpolator");
-    std::ofstream outputFile(interpolatedFile);
     
     const std::vector<StockPrice>& prices = read(exchangeFile);
-    const std::vector<StockPrice>& interpolated_prices = interpolateStockPrices(prices);
+    const std::vector<StockPrice>& interpolatedPrices = interpolateStockPrices(prices);
     
-    if (outputFile.is_open()) {
-        std::streambuf* originalBuffer = std::cout.rdbuf(); 
-        std::cout.rdbuf(outputFile.rdbuf()); 
-        
-        std::vector<StockPrice> prices;
-        for(StockPrice p: interpolated_prices)
-            p.print();
-        std::cout.rdbuf(originalBuffer);
-        
-        outputFile.close();
-    } else {
-        std::cerr << "Error opening the file: " << interpolatedFile << std::endl;
-    }
+    write("ticker,jsonData,targetDate", interpolatedFile, interpolatedPrices);
     
     profiler.stopComponent("Interpolator");
 }
+
+/**
+ * Interpolates the stock prices between historical data points.
+ * @param historicalPrices A vector of StockPrice objects containing historical data points.
+ * @return A vector of StockPrice objects representing the interpolated stock prices.
+ */
 std::vector<StockPrice> interpolateStockPrices(const std::vector<StockPrice>& historicalPrices) {
     std::vector<StockPrice> interpolatedPrices;
     std::mt19937_64 rng(std::chrono::steady_clock::now().time_since_epoch().count());
@@ -91,7 +93,7 @@ std::vector<StockPrice> interpolateStockPrices(const std::vector<StockPrice>& hi
     return interpolatedPrices;
 }
 
-//g++ -std=c++17 -Wall -Wextra -I/home/mars/rapidjson/include -I../Profiler -I../ interpolator.cpp ../stock_price.cpp ../Profiler/performance_profiler.cpp -o interpolator -lcurl
+//g++ -std=c++17 -Wall -Wextra -I./home/mars/Low-Latency-Trading-Framework interpolator.cpp ../stock_price.cpp ../util.cpp ../Profiler/performance_profiler.cpp -o interpolator
 
 int main() {
     Profiler prof;
