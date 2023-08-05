@@ -1,4 +1,7 @@
 #include "util.h"
+#include "stock_price.h"
+#include <sstream>
+#include <fstream>
 #include <sstream>
 
 std::vector<std::string> splitStringByComma(const std::string& input) {
@@ -33,4 +36,23 @@ std::vector<StockPrice> read(const std::string& sourceFile) {
     }
     file.close();
     return rows;
+}
+
+void write(const std::string header, const std::string& destination, std::vector<StockPrice> prices) {
+    std::ofstream outputFile(destination);
+
+    if (outputFile.is_open()) {
+        std::streambuf* originalBuffer = std::cout.rdbuf(); 
+        std::cout.rdbuf(outputFile.rdbuf()); 
+        
+        std::cout << header << std::endl;
+        
+        for(StockPrice p: prices)
+            p.print();
+
+        std::cout.rdbuf(originalBuffer);
+        outputFile.close();
+    } else {
+        std::cerr << "Error opening the file: " << destination << std::endl;
+    }
 }
