@@ -44,17 +44,20 @@ public:
         std::vector<StockPrice> prices = read(interpolatedFile);
         for (const StockPrice& price : prices) {
             std::string key = price.ticker;
+            int64_t timestamp = stoi(price.time);
             std::string value = std::to_string(price.price);
-            this->publishMessage(key, value);
+            this->publishMessage(timestamp, key, value);
         }
         this->profiler.stopComponent("Data Publisher");
     }
-    bool publishMessage(const std::string& key, const std::string& value) {
+    bool publishMessage(int64_t timestamp, const std::string& key, const std::string& value) {
         profiler.startComponent("Interpolator");
         RdKafka::ErrorCode err = producer_->produce(topicName_, RdKafka::Topic::PARTITION_UA,
                                                     RdKafka::Producer::RK_MSG_COPY,
                                                     const_cast<char*>(value.c_str()), value.size(),
-                                                    &key, nullptr);
+                                                    const_cast<char*>(key.c_str()), key.size(),
+                                                    timestamp,
+                                                    nullptr);
         if (err != RdKafka::ERR_NO_ERROR) {
             std::cerr << "Failed to produce message: " << RdKafka::err2str(err) << std::endl;
             return false;
