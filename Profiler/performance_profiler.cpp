@@ -14,7 +14,9 @@ void Profiler::stopComponent(const std::string& componentName) {
 }
 
 double Profiler::getTotalTime() const {
-    return getCurrentTime();
+    double tot = 0.0;
+    for(auto [k, v]: componentTimes_) tot += v;
+    return tot;
 }
 
 void Profiler::printComponentTimes() const {
