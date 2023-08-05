@@ -11,6 +11,10 @@
 #include "trading_engine.cpp"
 #include "position_calculator.cpp"
 
+/**
+ * @class KafkaConsumer
+ * @brief A class that represents a Kafka message consumer for stock prices.
+ */
 class KafkaConsumer {
 private:
     std::string brokerAddr_;
@@ -21,7 +25,13 @@ private:
     RdKafka::Consumer* consumer_;
     RdKafka::Topic* topic_;
     RdKafka::TopicPartition* partition_;
+
 public:
+    /**
+     * @brief Constructor to initialize the KafkaConsumer.
+     * @param brokerAddr The address of the Kafka broker to connect.
+     * @param topicName The name of the topic to consume messages from.
+     */
     KafkaConsumer(const std::string& brokerAddr, const std::string& topicName)
         : brokerAddr_(brokerAddr), topicName_(topicName) {
         conf_ = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
@@ -39,7 +49,9 @@ public:
 
         partition_ = RdKafka::TopicPartition::create(topicName_, RdKafka::Topic::PARTITION_UA);
     }
-
+    /**
+     * @brief Destructor to clean up resources.
+     */
     ~KafkaConsumer() {
         delete partition_;
         delete topic_;
@@ -47,6 +59,11 @@ public:
         delete conf_;
     }
 
+    /**
+     * @brief Function to consume stock price messages from Kafka within the specified lookback period.
+     * @param lookbackPeriod The time period (in milliseconds) to look back for stock prices.
+     * @return A vector of StockPrice containing the stock prices within the lookback period.
+     */
     std::vector<StockPrice> consumeMessages(int lookbackPeriod) {
         std::vector<StockPrice> lookbackWindow;
         int64_t endTime = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -84,14 +101,23 @@ public:
         return lookbackWindow;
     }
 };
+/**
+ * @class Controller
+ * @brief A class that manages the trading framework.
+ */
 class Controller { 
     Profiler* prof;
 public:
+    /**
+     * @brief Function to run the trading framework.
+     * This function consumes stock price data, executes the trading strategy,
+     * and calculates profits & losses.
+     */
     void runTradingFramework(){
         this->prof = new Profiler();
         this->prof->startComponent("Controller");
         std::string brokerAddr = "localhost:9092";
-        std::string topicName = "stock_prices";k
+        std::string topicName = "PRICES";
         KafkaConsumer kafkaConsumer(brokerAddr, topicName);
 
         int lookbackPeriod = 30000; // 30 seconds in milliseconds
@@ -114,6 +140,7 @@ public:
         this->prof->printComponentTimes();
     }
 }
+
 int main() {
     std::string brokerAddr = "localhost:9092"; 
     std::string topicName = "stock_prices";
