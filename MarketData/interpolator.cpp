@@ -1,14 +1,13 @@
-#include <iostream>
 #include <string>
 #include <vector>
 #include <random>
 #include <chrono>
-
-#include "../Profiler/performance_profiler.h"
-#include "../stock_price.h"
-#include "../util.h"
 #include <fstream>
 #include <sstream>
+
+#include "../Profiler/performance_profiler.h"
+#include "../model/stock_price.h"
+#include "../model/util.h"
 
 const std::string& exchangeFile = "exchange_prices.csv";
 const std::string& interpolatedFile = "interpolated_prices.csv";

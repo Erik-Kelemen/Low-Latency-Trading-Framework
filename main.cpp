@@ -1,4 +1,4 @@
-#include "TradingEngine/controller.h"
+#include "TradingEngine/controller.cpp"
 
 int main() {
     Controller controller;

@@ -1,6 +1,6 @@
 #include <vector>
-#include "../stock_price.h"
-
+#include "../model/stock_price.h"
+#include "../model/stock_trade.h"
 /**
  * @brief Calculate the profits and losses and update the holdings after executing trades.
  * 
@@ -22,7 +22,7 @@ void calculatePnL(const std::vector<StockTrade>& trades, std::vector<StockPrice>
         if (it != holdings.end()) {
             // Update the quantity of the existing holding based on the trade
             double currentQuantity = it->price;
-            double newQuantity = currentQuantity + trade.quantity;
+            double newQuantity = currentQuantity + trade.qty;
             if (newQuantity <= 0) {
                 // If the new quantity becomes negative or zero, remove the holding
                 holdings.erase(it);
@@ -31,7 +31,7 @@ void calculatePnL(const std::vector<StockTrade>& trades, std::vector<StockPrice>
             }
         } else {
             // Add a new holding for the stock if it doesn't exist in the holdings
-            holdings.push_back({ trade.ticker, trade.quantity });
+            holdings.push_back({ trade.ticker, trade.qty });
         }
 
         // Update cash and profits & losses based on the trade

@@ -1,8 +1,7 @@
-#include <iostream>
 #include <vector>
 #include <string>
 #include <chrono>
-#include "../stock_price.h"
+#include "../model/stock_price.h"
 #include "../Profiler/performance_profiler.h"
 
 /**
