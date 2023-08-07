@@ -11,21 +11,29 @@ The results are then persisted to "exchange_prices.csv".
 
 interpolator.cpp: Handles interpolating gaps in the real-world data at the millisecond level. It reads the prices from "exchange_prices.csv" delivered by the web scraper and, every 10 milliseconds, populates a new entry into a CSV file "interpolated_prices.csv" based on minor random variations (+/- 0.0005 by default).
 
-data_publisher.cpp: Reads "interpolated_prices.csv" and publishes real-world stock prices back to the TradingEngine, controller.cpp, using Apache Kafka.
+data_publisher.cpp: Reads "interpolated_prices.csv" and publishes stock prices back to the TradingEngine, controller.cpp, using Apache Kafka.
 
 ## TradingEngine:
 
 controller.cpp: Accepts stock prices from the Kafka Queue (provided by data_publisher) and organizes the data into a format that can be sent to the trading_strategy.cpp.
 
-trading_strategy.cpp: Implemented by quant developers using your framework to return trading decisions based on the provided stock prices and the current pool of remaining cash managed by the controller.cpp.
+trading_strategy.cpp: Implemented by quant developers using your framework to return trading decisions based on the provided stock prices and the current pool of remaining cash managed by the controller.cpp. The trades returned by trading_strategy.cpp are evaluated to calculate the profits and losses of the trading algorithm given the prices data.
 
+data_receiver.cpp: A consumer for accepting messages from the Kafka Queue and passing prices to the controller.
 
-The trades returned by trading_strategy.cpp are evaluated to calculate the profits and losses of the trading algorithm given the real-world data.
-
+position_calculator.cpp: An engine for computing the remaining Cash and net P&L given the trades and prices from the controller.
 
 ## Performance Profiling:
 
 performance_profiler.cpp: Responsible for measuring the latencies of each component in the framework, helping to analyze the efficiency and speed of the system.
+
+## Model:
+
+stock_price.cpp: Struct type definition for StockPrice as (ticker, time, price)
+
+stock_trade.cpp: Struct type definition for StockTrade as (ticker, time, qty)
+
+util.cpp: Miscellaneous utility functions for reading/writing from/to streams and files. Primarily used in MarketDatSimulator
 
 ## How to Use
 ### Redis Setup:
