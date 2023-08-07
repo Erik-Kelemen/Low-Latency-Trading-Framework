@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <fstream>
+#include <cpp_redis/cpp_redis>
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* response);
 void scrape(std::vector<std::string> symbols, std::string targetDate);
@@ -65,24 +66,34 @@ void scrape(std::vector<std::string> symbols, std::string targetDate, Profiler p
  */
 std::string fetchStockData(const std::string& symbol) {
     std::string url = BASE_URL + "function=TIME_SERIES_INTRADAY&symbol=" + symbol + "&apikey=" + API_KEY + "&interval=" + interval + "&extended_hours=false&outputsize=full";
-    CURL* curl = curl_easy_init();
-    std::string response;
-
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
-        CURLcode res = curl_easy_perform(curl);
-
-        if (res != CURLE_OK) {
-            std::cerr << "Error: " << curl_easy_strerror(res) << std::endl;
-        }
-
-        curl_easy_cleanup(curl);
-    }
     
+    std::string response;
+    cpp_redis::client client;
+    client.connect("localhost", 6379);
+    if (client.exists(symbol).get()) {
+        client.get(symbol, [&response](cpp_redis::reply& reply) {
+            if (reply.is_string()) {
+                response = reply.as_string();
+            }
+        });
+    } else {    
+        CURL* curl = curl_easy_init();
+        if (curl) {
+            curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+            CURLcode res = curl_easy_perform(curl);
+
+            if (res != CURLE_OK) {
+                std::cerr << "Error: " << curl_easy_strerror(res) << std::endl;
+            }
+
+            curl_easy_cleanup(curl);
+        }
+    }
+    client.disconnect
     return response;
 }
 
