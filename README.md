@@ -15,7 +15,7 @@ data_publisher.cpp: Reads "interpolated_prices.csv" and publishes stock prices b
 
 ## TradingEngine
 
-controller.cpp: Accepts stock prices from the Kafka Queue (provided by data_publisher) and organizes the data into a format that can be sent to the trading_strategy.cpp.
+controller.cpp: Accepts stock prices from the Kafka Queue (provided by data_publisher) and organizes the data into a format that can be sent to the trading_strategy.cpp. For persistence purposes and to simulate a real exchange, StockTrades are persisted to a database (in this framework, a local SQLite3 stored in trades.db).
 
 trading_strategy.cpp: Implemented by quant developers using your framework to return trading decisions based on the provided stock prices and the current pool of remaining cash managed by the controller.cpp. The trades returned by trading_strategy.cpp are evaluated to calculate the profits and losses of the trading algorithm given the prices data.
 
@@ -36,6 +36,17 @@ stock_trade.cpp: Struct type definition for StockTrade as (ticker, time, qty)
 util.cpp: Miscellaneous utility functions for reading/writing from/to streams and files. Primarily used in MarketDatSimulator
 
 ## How to Use
+I developed this project on a WSL environment, Ubuntu 22.04.2 LTS. The following steps are written for setup required to emulate the project in a similar Linux environment.
+
+### SQLIte3 Setup
+1. Install SQLite3 on your system.
+
+```
+sudo apt update
+sudo apt install sqlite3
+sqlite3 --version
+```
+
 ### Redis Setup:
 1. Install Redis
 
