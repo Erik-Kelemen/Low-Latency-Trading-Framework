@@ -4,7 +4,7 @@ A C++ simulation for researching the latency impact of different algorithmic tra
 ## Architecture
 ![alt text](https://github.com/Erik-Kelemen/Low-Latency-Trading-Framework/blob/main/imgs/LLFT-Architecture.drawio.png)
 
-## MarketData Component:
+## MarketData
 
 web_scraper.cpp: Responsible for querying the Exchange API to retrieve real-world historical stock price data at a fine level.  In this framework, Alpha Vantage is used to fetch the data. You can get your own Alpha Vantage API Key for free here: https://www.alphavantage.co/support/#api-key.
 The results are then persisted to "exchange_prices.csv".
@@ -13,7 +13,7 @@ interpolator.cpp: Handles interpolating gaps in the real-world data at the milli
 
 data_publisher.cpp: Reads "interpolated_prices.csv" and publishes stock prices back to the TradingEngine, controller.cpp, using Apache Kafka.
 
-## TradingEngine:
+## TradingEngine
 
 controller.cpp: Accepts stock prices from the Kafka Queue (provided by data_publisher) and organizes the data into a format that can be sent to the trading_strategy.cpp.
 
@@ -23,11 +23,11 @@ data_receiver.cpp: A consumer for accepting messages from the Kafka Queue and pa
 
 position_calculator.cpp: An engine for computing the remaining Cash and net P&L given the trades and prices from the controller.
 
-## Performance Profiling:
+## Performance Profiling
 
 performance_profiler.cpp: Responsible for measuring the latencies of each component in the framework, helping to analyze the efficiency and speed of the system.
 
-## Model:
+## Model
 
 stock_price.cpp: Struct type definition for StockPrice as (ticker, time, price)
 
@@ -43,55 +43,75 @@ util.cpp: Miscellaneous utility functions for reading/writing from/to streams an
 sudo apt update
 sudo apt install redis-server
 ```
- 2. Start Redis Server
+
+2. Start Redis Server
+    
 ```
 sudo service redis-server start
 redis-cli ping
 ```
+
 3. Using Redis
 You can interact with Redis using the redis-cli command. For example, you can set and retrieve values using the following commands:
+
 ```
 redis-cli set mykey "Hello Redis"
 redis-cli get mykey
 ```
+
 ### Apache Kafka Setup:
 1. Download Kafka
 You can download Kafka from the Apache Kafka website. Open your browser and navigate to the Kafka download page: https://kafka.apache.org/downloads
 Download the binary distribution and copy the link to the download URL.
 
 2. Install Kafka
+
 ```
 wget <paste_the_download_URL_here>
 tar -xzf kafka_<version>.tgz
 cd kafka_<version>
 ```
+
 3. Start ZooKeeper
 Kafka uses ZooKeeper for managing its cluster. Start ZooKeeper by running the following command:
+
 ```
 bin/zookeeper-server-start.sh config/zookeeper.properties
 ```
+
 4. Start Kafka Server
 In a new terminal window, navigate to the Kafka directory and start the Kafka server:
+
 ```
 bin/kafka-server-start.sh config/server.properties
 ```
+
 5. Create PRICES topic:
 Kafka uses topics to organize data streams. In this framework, we need a PRICES topic to pass data from the MarketDataSimulator to the TradingEngine.
+
 ```
 bin/kafka-topics.sh --create --topic PRICES --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
 ```
+
 ### Other Steps
 1. This project was written and tested in C++17, using G++. If you do not have g++, then you can install and verify it with the following commands
+   
 ```
 sudo apt install g++
 g++ --version
 ```
-2. You will also need the rapidjson library for G++.
+
+2. You will need the rapidjson library, used in the MarketDataSimulator, for extracting the prices from the Alpha Vantage api calls.
+   
 ```
 sudo apt-get install rapidjson-dev
 ```
+
 Or you can manually install it from the RapidJSON GitHub repository: https://github.com/Tencent/rapidjson
 I moved my rapidjson repository to /usr/local/include so it is consistently and easily accessible in my g++ command for compiling and testing individual methods.
+
+3. Replace the alpha vantage key in MarketData/web_scraper.cpp with your own Alpha Vantage API key.
+
 
 ### Trigger 
 To compile, run ```make```  and trigger the main executable.
