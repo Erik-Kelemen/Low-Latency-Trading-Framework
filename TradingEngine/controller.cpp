@@ -7,7 +7,7 @@
 
 #include "../model/stock_price.h"
 #include "../Profiler/performance_profiler.h"
-#include "data_consumer.cpp"
+#include "data_receiver.cpp"
 #include "trading_engine.cpp"
 #include "position_calculator.cpp"
 

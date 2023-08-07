@@ -1,13 +1,12 @@
-#include <iostream>
 #include <string>
 #include <vector>
 #include <librdkafka/rdkafkacpp.h>
 
-#include "../util.h"
 #include "../Profiler/performance_profiler.h"
-#include "../stock_price.h"
-#include <fstream>
-#include <sstream>
+#include "../model/stock_price.h"
+#include "../model/util.h"
+
+
 
 const std::string& interpolatedFile = "interpolated_prices.csv";
 

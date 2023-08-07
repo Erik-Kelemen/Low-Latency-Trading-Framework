@@ -14,17 +14,14 @@
  */
 void calculatePnL(const std::vector<StockTrade>& trades, std::vector<StockPrice>& holdings, double& profitsLosses, double& cash) {
     for (const StockTrade& trade : trades) {
-        // Find the stock in the holdings
         auto it = std::find_if(holdings.begin(), holdings.end(), [&trade](const StockPrice& holding) {
             return holding.ticker == trade.ticker;
         });
 
         if (it != holdings.end()) {
-            // Update the quantity of the existing holding based on the trade
             double currentQuantity = it->price;
             double newQuantity = currentQuantity + trade.qty;
             if (newQuantity <= 0) {
-                // If the new quantity becomes negative or zero, remove the holding
                 holdings.erase(it);
             } else {
                 it->price = newQuantity;
@@ -35,7 +32,7 @@ void calculatePnL(const std::vector<StockTrade>& trades, std::vector<StockPrice>
         }
 
         // Update cash and profits & losses based on the trade
-        cash -= trade.quantity * trade.price;
-        profitsLosses += trade.quantity * (trade.price - trade.averagePrice);
+        cash -= trade.qty * trade.price;
+        profitsLosses += trade.qty * (trade.price - trade.averagePrice);
     }
 }

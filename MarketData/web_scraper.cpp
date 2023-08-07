@@ -1,11 +1,10 @@
-#include <iostream>
 #include <string>
 #include <curl/curl.h>
 #include <rapidjson/document.h>
 
 #include "../Profiler/performance_profiler.h"
-#include "../stock_price.h" // Include the StockPrice header
-#include "../util.h"
+#include "../model/stock_price.h" // Include the StockPrice header
+#include "../model/util.h"
 #include <vector>
 
 #include <fstream>
