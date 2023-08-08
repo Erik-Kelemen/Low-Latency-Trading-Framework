@@ -1,30 +1,44 @@
-# Makefile for the Trading Software Engineering Project
-
-# Compiler and compiler flags
+# Compiler
 CXX := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra
+# Compiler flags
+CXXFLAGS := -std=c++17 -Wall -Wextra -I$(HOME)/Low-Latency-Trading-Framework -I/usr/include -I/usr/local/include/cpp_redis/includes
 
-# RapidJSON include directory
-RAPIDJSON_INCLUDE_DIR := /path/to/rapidjson/include
+# Directories
+SRC_DIR := $(HOME)/Low-Latency-Trading-Framework
+MARKETDATA_DIR := $(SRC_DIR)/MarketData
+TRADINGENGINE_DIR := $(SRC_DIR)/TradingEngine
+PROFILER_DIR := $(SRC_DIR)/Profiler
+MODEL_DIR := $(SRC_DIR)/Model
+
+# Libraries
+LIBS := -lcurl -lsqlite3 -lcpp_redis -lrapidjson
 
 # Source files
-SRCS := main.cpp web_scraper.cpp interpolator.cpp data_publisher.cpp \
-        controller.cpp trading_engine.cpp position_calculator.cpp
+MAIN_SRCS := $(SRC_DIR)/main.cpp
+MARKETDATA_SRCS := $(wildcard $(MARKETDATA_DIR)/*.cpp)
+TRADINGENGINE_SRCS := $(wildcard $(TRADINGENGINE_DIR)/*.cpp)
+PROFILER_SRCS := $(wildcard $(PROFILER_DIR)/*.cpp)
+MODEL_SRCS := $(wildcard $(MODEL_DIR)/*.cpp)
 
-# Object files (automatically derived from source files)
-OBJS := $(SRCS:.cpp=.o)
+# Object files
+MAIN_OBJS := $(MAIN_SRCS:.cpp=.o)
+MARKETDATA_OBJS := $(MARKETDATA_SRCS:.cpp=.o)
+TRADINGENGINE_OBJS := $(TRADINGENGINE_SRCS:.cpp=.o)
+PROFILER_OBJS := $(PROFILER_SRCS:.cpp=.o)
+MODEL_OBJS := $(MODEL_SRCS:.cpp=.o)
 
-# Output executable
-EXECUTABLE := trading_app
+# Target executable
+TARGET := LowLatencyTradingFramework
 
-# Rule to build the executable
-$(EXECUTABLE): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) -o $(EXECUTABLE)
+.PHONY: all clean
 
-# Rule to compile source files to object files
+all: $(TARGET)
+
+$(TARGET): $(MAIN_OBJS) $(MARKETDATA_OBJS) $(TRADINGENGINE_OBJS) $(PROFILER_OBJS) $(MODEL_OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
+
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -I$(RAPIDJSON_INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean rule to remove object files and the executable
 clean:
-	rm -f $(OBJS) $(EXECUTABLE)
+	rm -f $(TARGET) $(MAIN_OBJS) $(MARKETDATA_OBJS) $(TRADINGENGINE_OBJS) $(PROFILER_OBJS) $(MODEL_OBJS)
