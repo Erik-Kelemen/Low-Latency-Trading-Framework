@@ -44,6 +44,7 @@ I developed this project on a WSL environment, Ubuntu 22.04.2 LTS. The following
 ```
 sudo apt update
 sudo apt install sqlite3
+sudo apt-get install sqlite3 libsqlite3-dev
 sqlite3 --version
 ```
 
