@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <sqlite3.h>
 
-#include "../model/stock_price.h"
+#include "../Model/stock_price.h"
 #include "../Profiler/performance_profiler.h"
 #include "data_receiver.cpp"
 #include "trading_engine.cpp"
@@ -18,22 +18,33 @@ void insertTradesToDatabase(const std::vector<StockTrade>& trades);
  * @brief A class that manages the trading framework.
  */
 class Controller { 
-    Profiler* prof;
+    Profiler profiler;
+    std::vector<std::string>& symbols;
+    std::string targetDate
 public:
+    Controller(std::vector<std::string>& symbols, const std::string targetDate, Profiler profiler){
+        this->symbols = symbols;
+        this->targetDate = targetDate;
+        this->profiler = profiler;
+    }
     /**
      * @brief Function to run the trading framework.
-     * This function consumes stock price data, executes the trading strategy,
-     * and calculates profits & losses.
      */
     void runTradingFramework(){
-        this->prof = new Profiler();
-        this->prof->startComponent("Controller");
+        
+        scrape(this->symbols, this->targetDate, this->profiler);
+        interpolate(this->profiler);
+        publish(this->profiler);
+
         std::string brokerAddr = "localhost:9092";
         std::string topicName = "PRICES";
+
         KafkaConsumer kafkaConsumer(brokerAddr, topicName);
 
         int lookbackPeriod = 30000; // 30 seconds in milliseconds
         std::vector<StockPrice> lookbackWindow = kafkaConsumer.consumeMessages(lookbackPeriod);
+        
+        this->profiler->startComponent("Controller");
 
         double currentCash = 1000000.0;
         std::vector<StockPrice> currentHoldings;
@@ -47,11 +58,9 @@ public:
         insertTradesToDatabase(trades);
 
         positionCalculator.calculatePnL(trades, currentHoldings, currentProfitsLosses, currentCash);
-        this->prof->stopComponent("Controller");
-        this->prof->printComponentTimes();
+        this->profiler->stopComponent("Controller");
+        
     }
-    
-
 }
 /**
  * @brief Inserts a vector of trades into the SQLite3 database stored in "trades.db". 
