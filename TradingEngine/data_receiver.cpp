@@ -4,7 +4,7 @@
 #include <thread>
 #include <algorithm>
 
-#include "../model/stock_price.h"
+#include "../Model/stock_price.h"
 #include "../Profiler/performance_profiler.h"
 
 /**
@@ -20,16 +20,18 @@ private:
     RdKafka::Conf* conf_;
     RdKafka::Consumer* consumer_;
     RdKafka::Topic* topic_;
-    RdKafka::TopicPartition* partition_;
-
+    const uint32_t partition_ = RdKafka::Topic::PARTITION_UA;
+    Profiler profiler;
 public:
     /**
      * @brief Constructor to initialize the KafkaConsumer.
      * @param brokerAddr The address of the Kafka broker to connect.
      * @param topicName The name of the topic to consume messages from.
      */
-    KafkaConsumer(const std::string& brokerAddr, const std::string& topicName)
+    KafkaConsumer(const std::string& brokerAddr, const std::string& topicName, Profiler profiler)
         : brokerAddr_(brokerAddr), topicName_(topicName) {
+        this->profiler = profiler;
+        this->profiler.startComponent("Data Receiver");
         conf_ = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
         conf_->set("bootstrap.servers", brokerAddr_, errstr_);
 
@@ -42,14 +44,12 @@ public:
         if (!topic_) {
             std::cerr << "Failed to create Kafka topic: " << errstr_ << std::endl;
         }
-
-        partition_ = RdKafka::TopicPartition::create(topicName_, RdKafka::Topic::PARTITION_UA);
+        this->profiler.stopComponent("Data Receiver");
     }
     /**
      * @brief Destructor to clean up resources.
      */
     ~KafkaConsumer() {
-        delete partition_;
         delete topic_;
         delete consumer_;
         delete conf_;
@@ -61,13 +61,13 @@ public:
      * @return A vector of StockPrice containing the stock prices within the lookback period.
      */
     std::vector<StockPrice> consumeMessages(int lookbackPeriod) {
+        this->profiler.startComponent("Data Receiver");
         std::vector<StockPrice> lookbackWindow;
         int64_t endTime = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
 
         int64_t startTime = endTime - lookbackPeriod;
-
-        RdKafka::ErrorCode err = consumer_->assign({partition_});
+        RdKafka::ErrorCode err = consumer_->start(topic_, partition_, (int64_t) 0);
         if (err != RdKafka::ERR_NO_ERROR) {
             std::cerr << "Failed to assign partition: " << RdKafka::err2str(err) << std::endl;
             return lookbackWindow;
@@ -75,13 +75,13 @@ public:
 
         RdKafka::Message* msg = nullptr;
         while (true) {
-            msg = consumer_->consume(10); // 10ms timeout
+            msg = consumer_->consume(topic_, partition_, 10); // 10ms timeout
             if (msg && msg->err() == RdKafka::ERR_NO_ERROR) {
                 int64_t timestamp = msg->timestamp().timestamp;
                 if (timestamp >= startTime && timestamp <= endTime) {
-                    std::string key = static_cast<const char*>(msg->key()->payload());
+                    std::string key = reinterpret_cast<const char*>(msg->key());
                     double price = std::stod(static_cast<const char*>(msg->payload()));
-                    lookbackWindow.push_back({key, price});
+                    lookbackWindow.push_back({key, std::to_string(timestamp), price});
                 }
                 delete msg;
             } else if (msg && msg->err() == RdKafka::ERR__PARTITION_EOF) {
@@ -93,7 +93,8 @@ public:
             }
         }
 
-        consumer_->unassign();
+        consumer_->stop(topic_, partition_);
+        this->profiler.stopComponent("Data Receiver");
         return lookbackWindow;
     }
 };
