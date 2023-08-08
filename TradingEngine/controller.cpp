@@ -7,6 +7,10 @@
 
 #include "../Model/stock_price.h"
 #include "../Profiler/performance_profiler.h"
+#include "../MarketData/web_scraper.cpp"
+#include "../MarketData/interpolator.cpp"
+#include "../MarketData/data_publisher.cpp"
+
 #include "data_receiver.cpp"
 #include "trading_engine.cpp"
 #include "position_calculator.cpp"
@@ -18,48 +22,49 @@ void insertTradesToDatabase(const std::vector<StockTrade>& trades);
  * @brief A class that manages the trading framework.
  */
 class Controller { 
+private:
     Profiler profiler;
     std::vector<std::string>& symbols;
-    std::string targetDate
+    std::vector<std::string>& targetDates;
 public:
-    Controller(std::vector<std::string>& symbols, const std::string targetDate, Profiler profiler){
+    Controller(std::vector<std::string>& symbols, std::vector<std::string>& targetDates, Profiler profiler){
         this->symbols = symbols;
-        this->targetDate = targetDate;
+        this->targetDates = targetDates;
         this->profiler = profiler;
     }
     /**
      * @brief Function to run the trading framework.
      */
     void runTradingFramework(){
-        
-        scrape(this->symbols, this->targetDate, this->profiler);
-        interpolate(this->profiler);
-        publish(this->profiler);
-
-        std::string brokerAddr = "localhost:9092";
-        std::string topicName = "PRICES";
-
-        KafkaConsumer kafkaConsumer(brokerAddr, topicName);
-
-        int lookbackPeriod = 30000; // 30 seconds in milliseconds
-        std::vector<StockPrice> lookbackWindow = kafkaConsumer.consumeMessages(lookbackPeriod);
-        
         this->profiler->startComponent("Controller");
-
-        double currentCash = 1000000.0;
-        std::vector<StockPrice> currentHoldings;
-        double currentProfitsLosses = 0.0;
-
-        TradingEngine tradingEngine;
-        PositionCalculator positionCalculator;
-
-        std::vector<StockTrade> trades = tradingEngine.executeTradingStrategy(lookbackWindow, currentCash, currentHoldings, currentProfitsLosses);
         
-        insertTradesToDatabase(trades);
+        for(std::string date: this->targetDates){
+            double currentCash = 1000000.0;
+            TradingEngine tradingEngine(currentCash);
 
-        positionCalculator.calculatePnL(trades, currentHoldings, currentProfitsLosses, currentCash);
+            scrape(this->symbols, date, this->profiler);
+            interpolate(this->profiler);
+            publish(this->profiler);
+
+            std::string brokerAddr = "localhost:9092";
+            std::string topicName = "PRICES";
+
+            KafkaConsumer kafkaConsumer(brokerAddr, topicName);
+
+            int lookbackPeriod = 30000; // 30 seconds in milliseconds
+            std::vector<StockPrice> lookbackWindow = kafkaConsumer.consumeMessages(lookbackPeriod);
+            
+            
+            std::vector<StockPrice> currentHoldings;
+            double currentProfitsLosses = 0.0;
+
+            std::vector<StockTrade> trades = tradingEngine.executeTradingStrategy(lookbackWindow, currentCash, currentHoldings, currentProfitsLosses);
+            
+            insertTradesToDatabase(trades);
+
+            calculatePnL(trades, currentHoldings, currentProfitsLosses, currentCash);
+        }
         this->profiler->stopComponent("Controller");
-        
     }
 }
 /**

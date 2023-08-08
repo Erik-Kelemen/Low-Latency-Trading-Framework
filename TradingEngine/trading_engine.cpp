@@ -30,17 +30,13 @@ public:
     std::vector<std::string> movingAverageCrossover(const std::vector<StockPrice>& lookbackWindow) {
         std::vector<std::string> stocksToBuy;
 
-        // Calculate the 30-second moving average
         double ma30 = 0.0;
         for (const auto& price : lookbackWindow) {
             ma30 += price.price;
         }
         ma30 /= lookbackWindow.size();
 
-        // Decide which stocks to buy based on the crossover strategy
         for (const auto& price : lookbackWindow) {
-            // You can implement your own criteria for stock selection here.
-            // For this example, let's assume we buy stocks whose current price is below the 30-second moving average.
             if (price.price < ma30) {
                 stocksToBuy.push_back(price.ticker);
             }
@@ -57,15 +53,12 @@ public:
         std::vector<std::string> stocksToBuy = movingAverageCrossover(lookbackWindow);
 
         for (const auto& stock : stocksToBuy) {
-            // Calculate the maximum quantity of stocks that can be bought with the available cash
             double maxQuantity = cash_ / lookbackWindow.back().price;
-            // Buy only a portion of the stocks if the available cash is not sufficient for all stocks
-            double quantityToBuy = std::min(maxQuantity, 1000.0); // Buying a maximum of 1000 stocks
+            double quantityToBuy = std::min(maxQuantity, 1000.0);
 
             double cost = quantityToBuy * lookbackWindow.back().price;
             cash_ -= cost;
 
-            // Update the holdings and profits & losses
             holdings_.push_back({stock, quantityToBuy});
             profitsLosses_ -= cost;
         }
