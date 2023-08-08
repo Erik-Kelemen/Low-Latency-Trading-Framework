@@ -1,6 +1,6 @@
 #include <vector>
-#include "../model/stock_price.h"
-#include "../model/stock_trade.h"
+#include "../Model/stock_price.h"
+#include "../Model/stock_trade.h"
 /**
  * @brief Calculate the profits and losses and update the holdings after executing trades.
  * 
