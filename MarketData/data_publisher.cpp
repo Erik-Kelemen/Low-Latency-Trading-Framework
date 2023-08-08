@@ -3,10 +3,8 @@
 #include <librdkafka/rdkafkacpp.h>
 
 #include "../Profiler/performance_profiler.h"
-#include "../model/stock_price.h"
-#include "../model/util.h"
-
-
+#include "../Model/stock_price.h"
+#include "../Model/util.h"
 
 const std::string& interpolatedFile = "interpolated_prices.csv";
 

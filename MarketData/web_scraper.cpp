@@ -3,12 +3,13 @@
 #include <rapidjson/document.h>
 
 #include "../Profiler/performance_profiler.h"
-#include "../model/stock_price.h" // Include the StockPrice header
-#include "../model/util.h"
+#include "../Model/stock_price.h" // Include the StockPrice header
+#include "../Model/util.h"
 #include <vector>
 
 #include <fstream>
 #include <cpp_redis/cpp_redis>
+// /usr/local/include/cpp_redis/includes/cpp_redis/cpp_redis
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* response);
 void scrape(std::vector<std::string> symbols, std::string targetDate);
@@ -16,7 +17,7 @@ std::string fetchStockData(const std::string& symbol);
 std::vector<StockPrice> parseStockData(const std::string ticker, const std::string& jsonData, const std::string& targetDate);
 
 const std::string BASE_URL = "https://www.alphavantage.co/query?";
-const std::string API_KEY = "ALQU3SWWYFF7QHXA"; //replace with your Alpha Vantage API Key
+const std::string API_KEY = "ALQU3SWWYFF7QHXA"; //<--- replace with your own Alpha Vantage API Key
 const std::string interval = "1min";
 
 /**
