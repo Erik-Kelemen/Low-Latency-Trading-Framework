@@ -2,7 +2,7 @@
 A C++ simulation for researching the latency impact of different algorithmic trading optimizations, including cache locality, memory management, fast I/O, and parallel processing. The framework includes a market data simulator to interpolate millisecond-level stock prices from real-world S&P 500 company data (extracted using Alpha Vantage) and publishes the results to the trading engine using Kafka.
 
 ## Architecture
-![alt text](https://github.com/Erik-Kelemen/Low-Latency-Trading-Framework/blob/main/imgs/LLFT-Architecture.drawio.png)
+![alt text](https://github.com/Erik-Kelemen/Low-Latency-Trading-Framework/blob/main/imgs/LLTF.drawio.png)
 
 ## MarketData
 
