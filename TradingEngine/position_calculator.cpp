@@ -12,26 +12,21 @@
  * @param profitsLosses The reference to a double representing the current profits and losses.
  * @param cash The reference to a double representing the current available cash.
  */
-void calculatePnL(const std::vector<StockTrade>& trades, std::vector<StockPrice>& holdings, double& profitsLosses, double& cash) {
+void updateHoldingsAndCash(const std::vector<StockTrade>& trades, std::unordered_map<std::string, double>& holdings, double& profitsLosses, double& cash) {
     for (const StockTrade& trade : trades) {
-        auto it = std::find_if(holdings.begin(), holdings.end(), [&trade](const StockPrice& holding) {
-            return holding.ticker == trade.ticker;
-        });
-
+        double currentQuantity = 0.0;
+        auto it = holdings.find(trade.ticker);
         if (it != holdings.end()) {
-            double currentQuantity = it->price;
-            double newQuantity = currentQuantity + trade.qty;
-            if (newQuantity <= 0) {
-                holdings.erase(it);
-            } else {
-                it->price = newQuantity;
-            }
-        } else {
-            // Add a new holding for the stock if it doesn't exist in the holdings
-            holdings.push_back({ trade.ticker, trade.qty });
+            currentQuantity = it->second;
         }
 
-        // Update cash and profits & losses based on the trade
+        double newQuantity = currentQuantity + trade.qty;
+        if (newQuantity <= 0) {
+            holdings.erase(trade.ticker);
+        } else {
+            holdings[trade.ticker] = newQuantity;
+        }
+
         cash -= trade.qty * trade.price;
         profitsLosses += trade.qty * (trade.price - trade.averagePrice);
     }
