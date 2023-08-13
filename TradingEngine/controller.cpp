@@ -8,13 +8,10 @@
 #include "../Model/stock_price.h"
 #include "../Profiler/performance_profiler.h"
 #include "../MarketData/web_scraper.cpp"
-#include "../MarketData/interpolator.cpp"
-#include "../MarketData/data_publisher.cpp"
 
-#include "data_receiver.cpp"
+#include "data_consumer.cpp"
 #include "trading_engine.cpp"
 #include "position_calculator.cpp"
-#include <cpp_redis/cpp_redis>
 
 void insertTradesToDatabase(const std::vector<StockTrade>& trades);
 
@@ -25,55 +22,77 @@ void insertTradesToDatabase(const std::vector<StockTrade>& trades);
 class Controller { 
 private:
     Profiler profiler;
-    std::vector<std::string>& symbols;
-    std::vector<std::string>& targetDates;
+    const std::vector<std::string>& symbols;
+    const std::vector<std::string>& targetDates;
+    const std::string brokerAddr = "localhost:9092";
+    const std::string topicName = "PRICES";
 public:
-    Controller(std::vector<std::string>& symbols, std::vector<std::string>& targetDates, Profiler profiler){
+    /**
+     * @brief Constructor for the Controller class.
+     * 
+     * @param cash The initial cash amount for the trading engine to work with.
+     * @param lookbackPeriod The duration, in milliseconds, for the trading engine to receive historical prices for.
+     * @param symbols A reference to a constant vector of strings representing stock symbols.
+     * @param targetDates A reference to a constant vector of strings representing target dates for data retrieval.
+     * @param profiler The profiler object to be used for performance measurement.
+     */
+    Controller(const double cash, const int lookbackPeriod, const std::vector<std::string>& symbols,
+                const std::vector<std::string>& targetDates, Profiler profiler) {
+        this->cash = cash;
+        this->lookbackPeriod = lookbackPeriod;
         this->symbols = symbols;
         this->targetDates = targetDates;
         this->profiler = profiler;
     }
     /**
-     * @brief Function to run the trading framework.
+     * @brief Runs the trading framework for the specified target dates.
+     *
+     * This function runs the trading framework for a list of target dates. For each
+     * date, it scrapes the necessary data, maintains a sliding window of historical
+     * stock prices (lookbackWindow), and executes the trading strategy based on the
+     * data in the window. The window size is determined by the lookback period.
+     *
+     * @note The function consumes new Kafka messages every 10 milliseconds and
+     *       maintains a sliding window of historical data. The sliding window ensures
+     *       that the data for the specified lookback period is always available for
+     *       the trading strategy.
      */
-    void runTradingFramework(){
+    void runTradingFramework() {
         this->profiler->startComponent("Controller");
-        
-        for(std::string date: this->targetDates){
-            double currentCash = 1000000.0;
-            TradingEngine tradingEngine(currentCash);
-
+        double cash = this->cash;
+        double currentProfitsLosses = 0.0;
+        std::unordered_map<std::string, double> currentHoldings;
+        for (const std::string date : this->targetDates) {
             scrape(this->symbols, date, this->profiler);
-            interpolate(this->profiler);
-            publish(this->profiler);
-
-            std::string brokerAddr = "localhost:9092";
-            std::string topicName = "PRICES";
-
-            KafkaConsumer kafkaConsumer(brokerAddr, topicName);
-
-            int lookbackPeriod = 30000; // 30 seconds in milliseconds
-            std::vector<StockPrice> lookbackWindow = kafkaConsumer.consumeMessages(lookbackPeriod);
             
+            KafkaConsumer kafkaConsumer(this->brokerAddr, this->topicName);
             
-            std::vector<StockPrice> currentHoldings;
-            double currentProfitsLosses = 0.0;
+            std::deque<StockPrice> lookbackWindow; 
+            while (true) {
+                std::vector<StockPrice> newData = kafkaConsumer.consumeMessages(10);
 
-            std::vector<StockTrade> trades = tradingEngine.executeTradingStrategy(lookbackWindow, currentCash, currentHoldings, currentProfitsLosses);
-            
-            insertTradesToDatabase(trades);
+                if (newData.empty())
+                    break;
 
-            calculatePnL(trades, currentHoldings, currentProfitsLosses, currentCash);
+                lookbackWindow.erase(lookbackWindow.begin(), lookbackWindow.end() - newData.size());
+                lookbackWindow.insert(lookbackWindow.end(), newData.begin(), newData.end());
+
+                std::vector<StockTrade> trades = tradingEngine.executeTradingStrategy(lookbackWindow, cash, currentHoldings, currentProfitsLosses);
+
+                persistTrades(trades);
+
+                updateHoldingsAndCash(trades, currentHoldings, currentProfitsLosses, cash);
+            }
         }
         this->profiler->stopComponent("Controller");
     }
-}
+};
 /**
  * @brief Inserts a vector of trades into the SQLite3 database stored in "trades.db". 
  *
  * @param trades The vector of StockTrade objects to insert into the database.
  */
-void insertTradesToDatabase(const std::vector<StockTrade>& trades) {
+void persistTrades(const std::vector<StockTrade>& trades) {
     sqlite3* db;
     int rc = sqlite3_open("trades.db", &db);
     if (rc) {
@@ -105,22 +124,4 @@ void insertTradesToDatabase(const std::vector<StockTrade>& trades) {
     }
 
     sqlite3_close(db);
-}
-
-//g++ -std=c++17 -Wall -Wextra -I/usr/local/include -o your_program your_program.cpp -lsqlite3
-
-int main() {
-    std::string brokerAddr = "localhost:9092"; 
-    std::string topicName = "stock_prices";
-    KafkaConsumer kafkaConsumer(brokerAddr, topicName);
-
-    int lookbackPeriod = 30000; // 30 seconds in milliseconds
-    std::vector<StockPrice> lookbackWindow = kafkaConsumer.consumeMessages(lookbackPeriod);
-
-    double currentCash = 1000000.0; 
-    std::vector<StockPrice> currentHoldings; 
-    double currentProfitsLosses = 0.0;
-
-
-    return 0;
 }
