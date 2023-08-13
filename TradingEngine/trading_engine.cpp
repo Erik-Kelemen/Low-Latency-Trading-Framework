@@ -10,7 +10,7 @@
  */
 class TradingEngine {
 private:
-    double cash_; ///< Current available cash for trading.
+    double cash_;
     std::vector<StockPrice> holdings_; ///< Vector to store the stocks and their quantities held.
     double profitsLosses_; ///< Total profits and losses from executed trades.
 
@@ -88,29 +88,3 @@ public:
         return profitsLosses_;
     }
 };
-
-
-//g++ -std=c++17 -Wall -Wextra -I/home/mars/rapidjson/include -I../Profiler -I../ interpolator.cpp ../stock_price.cpp ../Profiler/performance_profiler.cpp -o interpolator -lcurl
-
-int main() {
-    double initialCash = 1000000.0;
-    TradingEngine tradingEngine(initialCash);
-
-    // Execute trades based on the trading strategy and available cash
-    tradingEngine.executeTrades(lookbackWindow);
-
-    // Get the current cash, holdings, and profits & losses
-    double currentCash = tradingEngine.getCurrentCash();
-    const std::vector<StockPrice>& currentHoldings = tradingEngine.getCurrentHoldings();
-    double currentProfitsLosses = tradingEngine.getCurrentProfitsLosses();
-
-    // Print the results (you can customize this based on your needs)
-    std::cout << "Current Cash: " << currentCash << std::endl;
-    std::cout << "Current Holdings: " << std::endl;
-    for (const auto& holding : currentHoldings) {
-        std::cout << "Symbol: " << holding.symbol << ", Quantity: " << holding.price << std::endl;
-    }
-    std::cout << "Current Profits & Losses: " << currentProfitsLosses << std::endl;
-
-    return 0;
-}
