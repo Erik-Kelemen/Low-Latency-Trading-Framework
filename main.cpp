@@ -4,9 +4,11 @@
 #include <string>
 int main() {
     std::vector<std::string> symbols = {"MSFT", "AMZN", "GOOGL", "META", "NFLX"};
-    const std::string date = "2023-08-02";
+    std::vector<std::string> dates = {"2023-08-02", "2023-08-03"}
+    double cash = 1000000.0;
+    int lookbackPeriod = 30000;
     Profiler profiler;
-    Controller controller(symbols, date, profiler);
+    Controller controller(cash, lookbackPeriod, symbols, dates, profiler);
     controller.runTradingFramework();
     profiler.printComponentTimes();
     return 0;
