@@ -8,6 +8,7 @@
 #include "../Profiler/performance_profiler.h"
 #include "../Model/stock_price.h"
 #include "../Model/util.h"
+#include "data_publisher.cpp"
 
 const std::string& exchangeFile = "exchange_prices.csv";
 const std::string& interpolatedFile = "interpolated_prices.csv";
@@ -40,15 +41,23 @@ long long convertToMilliseconds(const std::string& dateTimeString) {
  * Interpolates the stock prices between historical data points.
  * @param profiler The Profiler object to measure performance.
  */
-void interpolate(Profiler profiler){
+void interpolate(const std::vector<StockPrice>& prices, Profiler profiler, bool read = false, bool persist = false){
     profiler.startComponent("Interpolator");
     
-    const std::vector<StockPrice>& prices = read(exchangeFile);
+    if (read) 
+        read(exchangeFile);
+
     const std::vector<StockPrice>& interpolatedPrices = interpolateStockPrices(prices);
     
-    write("ticker,jsonData,targetDate", interpolatedFile, interpolatedPrices);
+    if (persist)
+        write("ticker,jsonData,targetDate", interpolatedFile, interpolatedPrices);
     
     profiler.stopComponent("Interpolator");
+
+    std::string brokerAddr = "localhost:9092";
+    std::string topicName = "PRICES";
+    KafkaPublisher kafkaPublisher(brokerAddr, topicName, profiler);
+    kafkaPublisher.publish(interpolatedPrices)
 }
 
 /**

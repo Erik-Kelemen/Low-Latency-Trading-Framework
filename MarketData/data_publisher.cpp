@@ -53,9 +53,10 @@ public:
     /**
      * @brief Function to publish stock prices to the Kafka topic.
      */
-    void publish(){
+    void publish(const std::vector<StockPrice>& prices, bool read = false){
         this->profiler.startComponent("Data Publisher");
-        std::vector<StockPrice> prices = read(interpolatedFile);
+        if (read)
+            prices = read(interpolatedFile);
         for (const StockPrice& price : prices) {
             std::string key = price.ticker;
             int64_t timestamp = stoi(price.time);
