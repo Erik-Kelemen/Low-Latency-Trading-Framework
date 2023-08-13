@@ -8,8 +8,6 @@
 #include <vector>
 
 #include <fstream>
-#include <cpp_redis/cpp_redis>
-// /usr/local/include/cpp_redis/includes/cpp_redis/cpp_redis
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* response);
 void scrape(std::vector<std::string> symbols, std::string targetDate);
@@ -68,15 +66,7 @@ std::string fetchStockData(const std::string& symbol) {
     std::string url = BASE_URL + "function=TIME_SERIES_INTRADAY&symbol=" + symbol + "&apikey=" + API_KEY + "&interval=" + interval + "&extended_hours=false&outputsize=full";
     
     std::string response;
-    cpp_redis::client client;
-    client.connect("localhost", 6379);
-    if (client.exists(symbol).get()) {
-        client.get(symbol, [&response](cpp_redis::reply& reply) {
-            if (reply.is_string()) {
-                response = reply.as_string();
-            }
-        });
-    } else {    
+     else {    
         CURL* curl = curl_easy_init();
         if (curl) {
             curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
@@ -93,7 +83,7 @@ std::string fetchStockData(const std::string& symbol) {
             curl_easy_cleanup(curl);
         }
     }
-    client.disconnect
+    client.disconnect();
     return response;
 }
 

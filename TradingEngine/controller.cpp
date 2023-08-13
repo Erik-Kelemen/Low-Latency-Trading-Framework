@@ -14,6 +14,7 @@
 #include "data_receiver.cpp"
 #include "trading_engine.cpp"
 #include "position_calculator.cpp"
+#include <cpp_redis/cpp_redis>
 
 void insertTradesToDatabase(const std::vector<StockTrade>& trades);
 
