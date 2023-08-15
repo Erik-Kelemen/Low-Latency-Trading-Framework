@@ -4,7 +4,7 @@
 #include <string>
 int main() {
     std::vector<std::string> symbols = {"MSFT", "AMZN", "GOOGL", "META", "NFLX"};
-    std::vector<std::string> dates = {"2023-08-02", "2023-08-03"}
+    std::vector<std::string> dates = {"2023-08-02"};
     double cash = 1000000.0;
     int lookbackPeriod = 30000;
     Profiler profiler;
