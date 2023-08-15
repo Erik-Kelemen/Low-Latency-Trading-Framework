@@ -1,33 +1,26 @@
-# Compiler
 CXX := g++
-# Compiler flags
-CXXFLAGS := -std=c++17 -Wall -Wextra -I$(HOME)/Low-Latency-Trading-Framework -I/usr/include -I/usr/local/include/cpp_redis/includes
+CXXFLAGS := -std=c++17 -Wall -Wextra -I$(HOME)/Low-Latency-Trading-Framework -I/usr/include -I/usr/local/include/cpp_redis/includes -I/usr/local/include/tacopie/includes
 
-# Directories
 SRC_DIR := $(HOME)/Low-Latency-Trading-Framework
 MARKETDATA_DIR := $(SRC_DIR)/MarketData
 TRADINGENGINE_DIR := $(SRC_DIR)/TradingEngine
 PROFILER_DIR := $(SRC_DIR)/Profiler
 MODEL_DIR := $(SRC_DIR)/Model
 
-# Libraries
 LIBS := -lcurl -lsqlite3 -lcpp_redis -lrapidjson
 
-# Source files
 MAIN_SRCS := $(SRC_DIR)/main.cpp
 MARKETDATA_SRCS := $(wildcard $(MARKETDATA_DIR)/*.cpp)
 TRADINGENGINE_SRCS := $(wildcard $(TRADINGENGINE_DIR)/*.cpp)
 PROFILER_SRCS := $(wildcard $(PROFILER_DIR)/*.cpp)
 MODEL_SRCS := $(wildcard $(MODEL_DIR)/*.cpp)
 
-# Object files
 MAIN_OBJS := $(MAIN_SRCS:.cpp=.o)
 MARKETDATA_OBJS := $(MARKETDATA_SRCS:.cpp=.o)
 TRADINGENGINE_OBJS := $(TRADINGENGINE_SRCS:.cpp=.o)
 PROFILER_OBJS := $(PROFILER_SRCS:.cpp=.o)
 MODEL_OBJS := $(MODEL_SRCS:.cpp=.o)
 
-# Target executable
 TARGET := LowLatencyTradingFramework
 
 .PHONY: all clean
