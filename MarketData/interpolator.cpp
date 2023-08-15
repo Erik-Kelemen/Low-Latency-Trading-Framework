@@ -41,10 +41,10 @@ long long convertToMilliseconds(const std::string& dateTimeString) {
  * Interpolates the stock prices between historical data points.
  * @param profiler The Profiler object to measure performance.
  */
-void interpolate(const std::vector<StockPrice>& prices, Profiler profiler, bool read = false, bool persist = false){
+void interpolate(const std::vector<StockPrice>& prices, Profiler profiler, bool read_from_file = false, bool persist = false){
     profiler.startComponent("Interpolator");
     
-    if (read) 
+    if (read_from_file) 
         read(exchangeFile);
 
     const std::vector<StockPrice>& interpolatedPrices = interpolateStockPrices(prices);
@@ -57,7 +57,7 @@ void interpolate(const std::vector<StockPrice>& prices, Profiler profiler, bool 
     std::string brokerAddr = "localhost:9092";
     std::string topicName = "PRICES";
     KafkaPublisher kafkaPublisher(brokerAddr, topicName, profiler);
-    kafkaPublisher.publish(interpolatedPrices)
+    kafkaPublisher.publish(interpolatedPrices);
 }
 
 /**
@@ -99,13 +99,4 @@ std::vector<StockPrice> interpolateStockPrices(const std::vector<StockPrice>& hi
         }
     }
     return interpolatedPrices;
-}
-
-//g++ -std=c++17 -Wall -Wextra -I./home/mars/Low-Latency-Trading-Framework interpolator.cpp ../stock_price.cpp ../util.cpp ../Profiler/performance_profiler.cpp -o interpolator
-
-int main() {
-    Profiler prof;
-    interpolate(prof);
-
-    return 0;
 }

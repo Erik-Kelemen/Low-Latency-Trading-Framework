@@ -148,12 +148,3 @@ std::vector<StockPrice> parseStockData(const std::string ticker, const std::stri
     }
     return stockData;
 }
-
-//g++ -std=c++17 -Wall -Wextra -I/usr/local/include -I./home/mars/Low-Latency-Trading-Framework web_scraper.cpp ../stock_price.cpp ../util.cpp ../Profiler/performance_profiler.cpp -o web_scraper -lcurl
-int main() {
-    std::vector<std::string> symbols = {"MSFT", "AMZN", "GOOGL", "META", "NFLX"}; 
-    std::string targetDate = "2023-08-02";
-    Profiler prof;
-    scrape(symbols, targetDate, prof);
-    return 0;
-}

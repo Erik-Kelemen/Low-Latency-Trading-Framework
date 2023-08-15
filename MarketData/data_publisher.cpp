@@ -6,8 +6,6 @@
 #include "../Model/stock_price.h"
 #include "../Model/util.h"
 
-const std::string& interpolatedFile = "interpolated_prices.csv";
-
 /**
  * @class KafkaPublisher
  * @brief A class that represents a Kafka message publisher for stock prices.
@@ -53,10 +51,9 @@ public:
     /**
      * @brief Function to publish stock prices to the Kafka topic.
      */
-    void publish(const std::vector<StockPrice>& prices, bool read = false){
+    void publish(const std::vector<StockPrice>& prices, bool read_from_file = false){
         this->profiler.startComponent("Data Publisher");
-        if (read)
-            prices = read(interpolatedFile);
+        if (read_from_file) prices = read(interpolatedFile);
         for (const StockPrice& price : prices) {
             std::string key = price.ticker;
             int64_t timestamp = stoi(price.time);
@@ -89,14 +86,3 @@ public:
         return true;
     }
 };
-
-//g++ -std=c++17 -Wall -Wextra -I./home/mars/Low-Latency-Trading-Framework data_publisher.cpp ../stock_price.cpp ../util.cpp ../Profiler/performance_profiler.cpp -o data_publisher -L./home/mars/Low-Latency-Trading-Framework/kafka_2.13-3.5.1 -lrdkafka++ -lrdkafka -lz -lpthread
-
-int main() {
-    std::string brokerAddr = "localhost:9092";
-    std::string topicName = "PRICES";
-    Profiler prof;
-    KafkaPublisher kafkaPublisher(brokerAddr, topicName, prof);
-
-    return 0;
-}
