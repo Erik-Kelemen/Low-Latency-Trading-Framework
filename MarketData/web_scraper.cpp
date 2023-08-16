@@ -12,10 +12,10 @@
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* response);
 void scrape(std::vector<std::string> symbols, std::string targetDate);
-std::string fetchStockData(const std::string& symbol);
+std::string fetchStockData(const std::string& symbol, const std::string targetDate);
 std::vector<StockPrice> parseStockData(const std::string ticker, const std::string& jsonData, const std::string& targetDate);
 
-const std::string BASE_URL = "https://www.alphavantage.co/query?";
+const std::string ALPHA_VANTAGE_URL = "https://www.alphavantage.co/query?";
 const std::string API_KEY = "ALQU3SWWYFF7QHXA"; //<--- replace with your own Alpha Vantage API Key
 const std::string interval = "1min";
 
@@ -43,7 +43,7 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* res
  * @param targetDate The target date for which data is to be scraped.
  * @param profiler Profiler to measure performance.
  */
-void scrape(std::vector<std::string> symbols, std::string targetDate, Profiler profiler, bool persist = false){
+void scrape(std::vector<std::string> symbols, std::string targetDate, Profiler& profiler, bool persist = false){
     profiler.startComponent("Web Scraper");
     
     redis_client.connect("localhost", 6379, [](const std::string& host, std::size_t port, cpp_redis::client::connect_state status) {
@@ -55,7 +55,7 @@ void scrape(std::vector<std::string> symbols, std::string targetDate, Profiler p
     std::vector<StockPrice> prices;
 
     for (const std::string& symbol : symbols) {
-        std::string jsonData = fetchStockData(symbol);
+        std::string jsonData = fetchStockData(symbol, targetDate);
         std::vector<StockPrice> cur_prices = parseStockData(symbol, jsonData, targetDate);
         prices.insert(prices.end(), cur_prices.begin(), cur_prices.end());
     }
@@ -76,7 +76,7 @@ void scrape(std::vector<std::string> symbols, std::string targetDate, Profiler p
  * @param symbol The stock symbol to fetch data for.
  * @return The fetched stock data as a JSON string.
  */
-std::string fetchStockData(const std::string& symbol) {
+std::string fetchStockData(const std::string& symbol, const std::string targetDate) {
     std::string cacheKey = "STOCK_DATA_" + symbol + "_" + targetDate;
     std::string cachedData;
 
@@ -90,7 +90,7 @@ std::string fetchStockData(const std::string& symbol) {
         return cachedData;
     }
 
-    std::string url = BASE_URL + "function=TIME_SERIES_INTRADAY&symbol=" + symbol + "&apikey=" + API_KEY + "&interval=" + interval + "&extended_hours=false&outputsize=full";
+    std::string url = ALPHA_VANTAGE_URL + "function=TIME_SERIES_INTRADAY&symbol=" + symbol + "&apikey=" + API_KEY + "&interval=" + interval + "&extended_hours=false&outputsize=full";
     
     std::string response;
     CURL* curl = curl_easy_init();
@@ -108,7 +108,7 @@ std::string fetchStockData(const std::string& symbol) {
 
         curl_easy_cleanup(curl);
     }
-    client.disconnect();
+    redis_client.disconnect();
 
     if (!response.empty()) {
         redis_client.set(cacheKey, response);

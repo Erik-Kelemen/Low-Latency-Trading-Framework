@@ -16,7 +16,7 @@ std::vector<std::string> splitStringByComma(const std::string& input) {
     return result;
 }
 
-std::vector<StockPrice> read(const std::string& sourceFile) {
+std::vector<StockPrice> read(const std::string sourceFile) {
     std::vector<StockPrice> rows;
     std::ifstream file(sourceFile);
     std::string line;
@@ -38,7 +38,7 @@ std::vector<StockPrice> read(const std::string& sourceFile) {
     return rows;
 }
 
-void write(const std::string header, const std::string& destination, std::vector<StockPrice> prices) {
+void write(const std::string header, const std::string destination, std::vector<StockPrice> prices) {
     std::ofstream outputFile(destination);
 
     if (outputFile.is_open()) {

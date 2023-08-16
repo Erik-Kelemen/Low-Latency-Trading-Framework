@@ -10,9 +10,6 @@
 #include "../Model/util.h"
 #include "data_publisher.cpp"
 
-const std::string& exchangeFile = "exchange_prices.csv";
-const std::string& interpolatedFile = "interpolated_prices.csv";
-
 
 long long convertToMilliseconds(const std::string& timeString);
 void interpolate(Profiler profiler);
@@ -41,7 +38,7 @@ long long convertToMilliseconds(const std::string& dateTimeString) {
  * Interpolates the stock prices between historical data points.
  * @param profiler The Profiler object to measure performance.
  */
-void interpolate(const std::vector<StockPrice>& prices, Profiler profiler, bool read_from_file = false, bool persist = false){
+void interpolate(const std::vector<StockPrice>& prices, Profiler& profiler, bool read_from_file = false, bool persist = false){
     profiler.startComponent("Interpolator");
     
     if (read_from_file) 
@@ -54,9 +51,7 @@ void interpolate(const std::vector<StockPrice>& prices, Profiler profiler, bool 
     
     profiler.stopComponent("Interpolator");
 
-    std::string brokerAddr = "localhost:9092";
-    std::string topicName = "PRICES";
-    KafkaPublisher kafkaPublisher(brokerAddr, topicName, profiler);
+    KafkaPublisher kafkaPublisher(profiler);
     kafkaPublisher.publish(interpolatedPrices);
 }
 
@@ -72,20 +67,17 @@ std::vector<StockPrice> interpolateStockPrices(const std::vector<StockPrice>& hi
 
     const int millisecondsInterval = 10;
 
-    long long startTime = 34200000;  // 9:30 AM in milliseconds (Market opening time)
-    long long endTime = 57600000;    // 4:00 PM in milliseconds (Market closing time)
-
     for(size_t currentIndex = 0; currentIndex < historicalPrices.size() - 1; currentIndex++){
 
         const StockPrice& prevPrice = historicalPrices[currentIndex];
         const StockPrice& nextPrice = historicalPrices[currentIndex + 1];
 
-        long long startTime = convertToMilliseconds(prevPrice.time);
-        long long endTime = convertToMilliseconds(nextPrice.time);
+        int startTime = convertToMilliseconds(prevPrice.time);
+        int endTime = convertToMilliseconds(nextPrice.time);
         
         std::cout << prevPrice.time << ' ' << nextPrice.time << std::endl;
 
-        for(long long currentTime = startTime; currentTime < endTime; currentTime += millisecondsInterval){
+        for(int currentTime = startTime; currentTime < endTime; currentTime += millisecondsInterval){
             double timeFraction = static_cast<double>(currentTime - startTime) /
                                 (endTime - startTime);
             double interpolatedPrice = prevPrice.price +
