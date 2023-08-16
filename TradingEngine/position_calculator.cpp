@@ -12,7 +12,9 @@
  * @param profitsLosses The reference to a double representing the current profits and losses.
  * @param cash The reference to a double representing the current available cash.
  */
-void updateHoldingsAndCash(const std::vector<StockTrade>& trades, std::unordered_map<std::string, double>& holdings, double& profitsLosses, double& cash) {
+void updateHoldingsAndCash(const std::vector<StockTrade>& trades, std::unordered_map<std::string, 
+    double>& holdings, double& profitsLosses, double& cash, Profiler& profiler) {
+    profiler.startComponent("Position Calculator");    
     for (const StockTrade& trade : trades) {
         double currentQuantity = 0.0;
         auto it = holdings.find(trade.ticker);
@@ -30,4 +32,5 @@ void updateHoldingsAndCash(const std::vector<StockTrade>& trades, std::unordered
         cash -= trade.qty * trade.price;
         profitsLosses += trade.qty * (trade.price - trade.averagePrice);
     }
+    profiler.stopComponent("Position Calculator");    
 }
