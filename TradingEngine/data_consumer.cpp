@@ -13,46 +13,45 @@
  */
 class KafkaConsumer {
 private:
-    std::string brokerAddr_;
-    std::string topicName_;
-    std::string errstr_;
+    std::string brokerAddr;
+    std::string topicName;
+    std::string errstr;
 
-    RdKafka::Conf* conf_;
-    RdKafka::Consumer* consumer_;
-    RdKafka::Topic* topic_;
-    const uint32_t partition_ = RdKafka::Topic::PARTITION_UA;
-    Profiler profiler;
+    RdKafka::Conf* conf;
+    RdKafka::Consumer* consumer;
+    RdKafka::Topic* topic;
+    const uint32_t partition = RdKafka::Topic::PARTITION_UA;
+    Profiler& profiler;
 public:
     /**
      * @brief Constructor to initialize the KafkaConsumer.
      * @param brokerAddr The address of the Kafka broker to connect.
      * @param topicName The name of the topic to consume messages from.
      */
-    KafkaConsumer(const std::string& brokerAddr, const std::string& topicName, Profiler profiler)
-        : brokerAddr_(brokerAddr), topicName_(topicName) {
-        this->profiler = profiler;
-        this->profiler.startComponent("Data Receiver");
-        conf_ = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
-        conf_->set("bootstrap.servers", brokerAddr_, errstr_);
+    KafkaConsumer(Profiler& profiler)
+        : profiler(profiler) {
+        this->profiler.startComponent("Data Consumer");
+        conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
+        conf->set("bootstrap.servers", brokerAddr, errstr);
 
-        consumer_ = RdKafka::Consumer::create(conf_, errstr_);
-        if (!consumer_) {
-            std::cerr << "Failed to create Kafka consumer: " << errstr_ << std::endl;
+        consumer = RdKafka::Consumer::create(conf, errstr);
+        if (!consumer) {
+            std::cerr << "Failed to create Kafka consumer: " << errstr << std::endl;
         }
 
-        topic_ = RdKafka::Topic::create(consumer_, topicName_, nullptr, errstr_);
-        if (!topic_) {
-            std::cerr << "Failed to create Kafka topic: " << errstr_ << std::endl;
+        topic = RdKafka::Topic::create(consumer, topicName, nullptr, errstr);
+        if (!topic) {
+            std::cerr << "Failed to create Kafka topic: " << errstr << std::endl;
         }
-        this->profiler.stopComponent("Data Receiver");
+        this->profiler.stopComponent("Data Consumer");
     }
     /**
      * @brief Destructor to clean up resources.
      */
     ~KafkaConsumer() {
-        delete topic_;
-        delete consumer_;
-        delete conf_;
+        delete topic;
+        delete consumer;
+        delete conf;
     }
 
     /**
@@ -61,13 +60,13 @@ public:
      * @return A vector of StockPrice containing the stock prices within the lookback period.
      */
     std::vector<StockPrice> consumeMessages(int lookbackPeriod) {
-        this->profiler.startComponent("Data Receiver");
+        this->profiler.startComponent("Data Consumer");
         std::vector<StockPrice> lookbackWindow;
         int64_t endTime = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
 
         int64_t startTime = endTime - lookbackPeriod;
-        RdKafka::ErrorCode err = consumer_->start(topic_, partition_, (int64_t) 0);
+        RdKafka::ErrorCode err = consumer->start(topic, partition, (int64_t)0);
         if (err != RdKafka::ERR_NO_ERROR) {
             std::cerr << "Failed to assign partition: " << RdKafka::err2str(err) << std::endl;
             return lookbackWindow;
@@ -75,7 +74,7 @@ public:
 
         RdKafka::Message* msg = nullptr;
         while (true) {
-            msg = consumer_->consume(topic_, partition_, 10); // 10ms timeout
+            msg = consumer->consume(topic, partition, 10); // 10ms timeout
             if (msg && msg->err() == RdKafka::ERR_NO_ERROR) {
                 int64_t timestamp = msg->timestamp().timestamp;
                 if (timestamp >= startTime && timestamp <= endTime) {
@@ -93,8 +92,8 @@ public:
             }
         }
 
-        consumer_->stop(topic_, partition_);
-        this->profiler.stopComponent("Data Receiver");
+        consumer->stop(topic, partition);
+        this->profiler.stopComponent("Data Consumer");
         return lookbackWindow;
     }
 };
