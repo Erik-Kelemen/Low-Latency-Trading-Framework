@@ -4,6 +4,9 @@
 #include <chrono>
 #include <fstream>
 #include <sstream>
+#include <thread>
+#include <future>
+#include <algorithm>
 
 #include "../Profiler/performance_profiler.h"
 #include "../Model/stock_price.h"
@@ -14,7 +17,8 @@
 long long convertToMilliseconds(const std::string& timeString);
 void interpolate(Profiler profiler);
 std::vector<StockPrice> interpolateStockPrices(const std::vector<StockPrice>& historicalPrices);
-
+std::vector<StockPrice> interpolateStockPricesMultiThread(const std::vector<StockPrice>& historicalPrices, std::vector<StockPrice>& interpolatedPrices)
+void interpolateSegment(const std::vector<StockPrice>& segment, std::vector<StockPrice>& resultSegment);
 /**
  * Converts a date-time string to milliseconds since midnight.
  * @param dateTimeString The input date-time string in the format "yyyy-MM-dd HH:mm:ss".
@@ -43,8 +47,8 @@ void interpolate(const std::vector<StockPrice>& prices, Profiler& profiler, bool
     
     if (read_from_file) 
         read(exchangeFile);
-
-    const std::vector<StockPrice>& interpolatedPrices = interpolateStockPrices(prices);
+    std::vector<StockPrice> interpolatedPrices;
+    interpolateStockPricesMultiThread(prices, interpolatedPrices);
     
     if (persist)
         write("ticker,jsonData,targetDate", interpolatedFile, interpolatedPrices);
@@ -56,39 +60,75 @@ void interpolate(const std::vector<StockPrice>& prices, Profiler& profiler, bool
 }
 
 /**
+ * Interpolates the stock prices between historical data points using multithreading.
+ * This function divides the historical prices into segments and performs interpolation on each segment
+ * concurrently using std::async. The interpolated segments are then merged and sorted based on time.
+ *
+ * @param historicalPrices A vector of StockPrice objects containing historical data points.
+ * @return A vector of StockPrice objects representing the interpolated stock prices.
+ */
+std::vector<StockPrice> interpolateStockPricesMultiThread(const std::vector<StockPrice>& historicalPrices,
+                                                        std::vector<StockPrice>& interpolatedPrices) {
+    const size_t numSegments = 14;
+    const size_t segmentSize = historicalPrices.size() / numSegments;
+
+    std::vector<std::thread> threads;
+
+    for (size_t i = 0; i < numSegments; i++) {
+        size_t startIdx = i * segmentSize;
+        size_t endIdx = (i == numSegments - 1) ? historicalPrices.size() : startIdx + segmentSize;
+        std::vector<StockPrice> segment(historicalPrices.begin() + startIdx,
+                                        historicalPrices.begin() + endIdx);
+
+        threads.emplace_back([&segment, &interpolatedPrices]() {
+            std::vector<StockPrice> resultSegment;
+            interpolateSegment(segment, resultSegment);
+
+            std::lock_guard<std::mutex> lock(interpolatedPricesMutex);
+            interpolatedPrices.insert(interpolatedPrices.end(), resultSegment.begin(), resultSegment.end());
+        });
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    std::sort(interpolatedPrices.begin(), interpolatedPrices.end(),
+              [](const StockPrice& a, const StockPrice& b) {
+                  return convertToMilliseconds(a.time) < convertToMilliseconds(b.time);
+              });
+}
+
+
+/**
  * Interpolates the stock prices between historical data points.
  * @param historicalPrices A vector of StockPrice objects containing historical data points.
  * @return A vector of StockPrice objects representing the interpolated stock prices.
  */
-std::vector<StockPrice> interpolateStockPrices(const std::vector<StockPrice>& historicalPrices) {
-    std::vector<StockPrice> interpolatedPrices;
+void interpolateSegment(const std::vector<StockPrice>& segment,
+                        std::vector<StockPrice>& resultSegment) {
     std::mt19937_64 rng(std::chrono::steady_clock::now().time_since_epoch().count());
     std::uniform_real_distribution<double> priceDeltaDistribution(-0.0005, 0.0005);
 
     const int millisecondsInterval = 10;
 
-    for(size_t currentIndex = 0; currentIndex < historicalPrices.size() - 1; currentIndex++){
-
-        const StockPrice& prevPrice = historicalPrices[currentIndex];
-        const StockPrice& nextPrice = historicalPrices[currentIndex + 1];
+    for (size_t currentIndex = 0; currentIndex < segment.size() - 1; currentIndex++) {
+        const StockPrice& prevPrice = segment[currentIndex];
+        const StockPrice& nextPrice = segment[currentIndex + 1];
 
         int startTime = convertToMilliseconds(prevPrice.time);
         int endTime = convertToMilliseconds(nextPrice.time);
-        
-        std::cout << prevPrice.time << ' ' << nextPrice.time << std::endl;
 
-        for(int currentTime = startTime; currentTime < endTime; currentTime += millisecondsInterval){
+        for (int currentTime = startTime; currentTime < endTime; currentTime += millisecondsInterval) {
             double timeFraction = static_cast<double>(currentTime - startTime) /
-                                (endTime - startTime);
+                                  (endTime - startTime);
             double interpolatedPrice = prevPrice.price +
-                                    timeFraction * (nextPrice.price - prevPrice.price);
+                                       timeFraction * (nextPrice.price - prevPrice.price);
 
             double priceDelta = priceDeltaDistribution(rng);
             interpolatedPrice += priceDelta;
 
-            interpolatedPrices.push_back(StockPrice(nextPrice.ticker, std::to_string(currentTime), interpolatedPrice));
-            std::cout << currentTime << std::endl;
+            resultSegment.push_back(StockPrice(nextPrice.ticker, std::to_string(currentTime), interpolatedPrice));
         }
     }
-    return interpolatedPrices;
 }
