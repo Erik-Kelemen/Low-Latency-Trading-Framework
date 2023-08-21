@@ -14,7 +14,7 @@
  */
 class TradingEngine {
 private:
-    Profiler& profiler_; ///< The profiler object for performance measurement.
+    Profiler& profiler_;
 
 public:
     /**
